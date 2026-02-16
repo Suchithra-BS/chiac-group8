@@ -3,27 +3,83 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
+import { apiClient, Habit as ApiHabit } from '@/lib/api'
 
 import { SummaryCards } from '@/components//summary-cards'
 import { ProgressOverview } from '@/components/progress-overview'
 import { StreakInsights } from '@/components/streak-insights'
 import { CompletionStatus } from '@/components/completion-status'
-import { Habit } from '@/types/Habit'
+
+interface Habit {
+  id: string
+  name: string
+  frequency: 'daily' | 'weekly'
+  progress: number
+  streak: number
+  completed: boolean
+  lastCompleted?: string
+}
 
 export default function Page() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [mounted, setMounted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  const { isAuthenticated } = useAuth()
 
-  /* ---------------- LOAD FROM STORAGE ---------------- */
+  /* ---------------- LOAD FROM API ---------------- */
+
+  const loadHabits = async () => {
+    if (!isAuthenticated) return
+    
+    try {
+      const apiHabits: ApiHabit[] = await apiClient.getHabits()
+      const transformedHabits: Habit[] = apiHabits.map(habit => ({
+        id: habit._id,
+        name: habit.name,
+        frequency: habit.frequency,
+        progress: habit.progress,
+        streak: habit.streak,
+        completed: habit.completed,
+        lastCompleted: habit.lastCompleted
+      }))
+      setHabits(transformedHabits)
+    } catch (error) {
+      console.error('Error loading habits for analytics:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
-
-    const stored = localStorage.getItem('habits')
-    setHabits(stored ? JSON.parse(stored) : [])
   }, [])
 
-  if (!mounted) return null
+  useEffect(() => {
+    if (mounted) {
+      if (!isAuthenticated) {
+        // Redirect to login if not authenticated
+        window.location.href = '/auth/login'
+      } else {
+        loadHabits()
+      }
+    }
+  }, [mounted, isAuthenticated])
+
+  if (!mounted || !isAuthenticated) {
+    return null
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="flex justify-center items-center py-12">
+          <div className="text-muted-foreground">Loading analytics...</div>
+        </div>
+      </main>
+    )
+  }
 
   /* ---------------- DERIVED DATA ---------------- */
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Habit } from '@/types/Habit'
@@ -8,15 +9,25 @@ interface Props {
   habit: Habit
   onToggleComplete: (id: string) => void
   onDelete: (id: string) => void
+  onUndoComplete: (id: string) => void
 }
 
 export default function HabitCard({
   habit,
   onToggleComplete,
   onDelete,
+  onUndoComplete,
 }: Props) {
-  const today = new Date().toISOString().split('T')[0]
-  const completedToday = habit.lastCompleted === today
+  const [currentHabit, setCurrentHabit] = useState(habit);
+
+  const today = new Date().toISOString().split('T')[0];
+  const lastCompletedDate = currentHabit.lastCompleted ? currentHabit.lastCompleted.split('T')[0] : null;
+  const completedToday = lastCompletedDate === today;
+
+  // Update habit when prop changes
+  useEffect(() => {
+    setCurrentHabit(habit);
+  }, [habit]);
 
   return (
     <div className="rounded-xl border p-4 space-y-4">
@@ -49,6 +60,16 @@ export default function HabitCard({
         >
           {completedToday ? 'Completed Today' : 'Complete'}
         </Button>
+
+        {completedToday && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onUndoComplete(habit.id)}
+          >
+            Undo
+          </Button>
+        )}
 
         <Button
           size="sm"

@@ -1,6 +1,7 @@
 import './globals.css'
 
 import { ThemeProvider } from '@/components/theme-provider'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 export default function RootLayout({
   children,
@@ -11,7 +12,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

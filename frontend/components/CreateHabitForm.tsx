@@ -4,28 +4,39 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Habit } from '@/types/Habit'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function CreateHabitForm() {
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
   const [name, setName] = useState('')
   const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSave = () => {
-    if (!name.trim()) return
-
-    const newHabit: Habit = {
-      id: Date.now().toString(),
-      name,
-      frequency,
-      progress: 0,
-      streak: 0,
-      completed: false,
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setError('Please enter a habit name')
+      return
     }
 
-    const existing = JSON.parse(localStorage.getItem('habits') || '[]')
-    localStorage.setItem('habits', JSON.stringify([...existing, newHabit]))
-    router.push('/')
+    if (!isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      await apiClient.createHabit(name, frequency)
+      router.push('/')
+    } catch (err: any) {
+      setError(err.message || 'Failed to create habit')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -36,26 +47,37 @@ export default function CreateHabitForm() {
         placeholder="Habit name"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        disabled={isLoading}
       />
 
       <div className="flex gap-2">
         <Button
           variant={frequency === 'daily' ? 'default' : 'outline'}
           onClick={() => setFrequency('daily')}
+          disabled={isLoading}
         >
           Daily
         </Button>
         <Button
           variant={frequency === 'weekly' ? 'default' : 'outline'}
           onClick={() => setFrequency('weekly')}
+          disabled={isLoading}
         >
           Weekly
         </Button>
       </div>
 
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+          {error}
+        </div>
+      )}
+
       <div className="flex gap-2">
-        <Button onClick={handleSave}>Save</Button>
-        <Button variant="outline" onClick={() => router.push('/')}>
+        <Button onClick={handleSave} disabled={isLoading}>
+          {isLoading ? 'Creating...' : 'Save'}
+        </Button>
+        <Button variant="outline" onClick={() => router.push('/')} disabled={isLoading}>
           Cancel
         </Button>
       </div>
