@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Token</title>
+</head>
+<body>
+    <h1>Token Debug</h1>
+    <p>Check localStorage for token:</p>
+    <button onclick="localStorage.clear()">Clear All Storage</button>
+    <button onclick="alert(localStorage.getItem('token'))">Show Token</button>
+    <button onclick="location.reload()">Reload Page</button>
+    
+    <script>
+        console.log('Current token:', localStorage.getItem('token'));
+        console.log('All localStorage:', JSON.stringify(localStorage));
+    </script>
+</body>
+</html>
